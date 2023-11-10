@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { sql } from '@vercel/postgres';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { signIn } from '@/auth';
 const InvoiceSchema = z.object({
     id: z.string(),
     customerId: z.string({
@@ -65,7 +66,7 @@ const UpdateInvoice = InvoiceSchema.omit({ date: true, id: true });
  
 // ...
  
-export async function updateInvoice(id: string | undefined , formData: FormData,prevState: State,) {
+export async function updateInvoice(id: string | undefined ,prevState: State,formData: FormData, ) {
   const validatedFields = UpdateInvoice.safeParse({
     customerId: formData.get('customerId'),
     amount: formData.get('amount'),
@@ -104,4 +105,18 @@ export async function deleteInvoice(id: string) {
   } catch (error) {
     return { message: 'Database Error: Failed to Delete Invoice.' };
   }
+  }
+
+  export async function authenticate(
+    prevState: string | undefined,
+    formData: FormData,
+  ) {
+    try {
+      await signIn('credentials', Object.fromEntries(formData));
+    } catch (error) {
+      if ((error as Error).message.includes('CredentialsSignin')) {
+        return 'CredentialSignin';
+      }
+      throw error;
+    }
   }
